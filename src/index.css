@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  
+  --color-card: #0a0a0a;
+  --color-card-border: rgba(255, 255, 255, 0.1);
+  
+  --color-income: #10b981;
+  --color-expense: #f43f5e;
+  --color-accent: var(--theme-color, #6366f1);
+  --color-accent-soft: rgba(var(--theme-color-rgb, 99, 102, 241), 0.1);
+  --color-accent-border: rgba(var(--theme-color-rgb, 99, 102, 241), 0.2);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html {
+    font-size: 105%;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply font-sans;
+  }
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.income-gradient {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
+}
+
+.expense-gradient {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, transparent 100%);
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');

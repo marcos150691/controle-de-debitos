@@ -1,0 +1,10 @@
+{
+  "name": "Remix: Remix: Controle de Débitos versa1",
+  "description": "Sistema premium para gestão e controle de dívidas, passivos e obrigações financeiras.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
