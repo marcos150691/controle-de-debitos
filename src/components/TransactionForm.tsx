@@ -35,6 +35,7 @@ export function TransactionForm({ onAdd, onUpdate, debtToEdit, onCancelEdit, cat
   const [isFixed, setIsFixed] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState('');
   const [currentInstallment, setCurrentInstallment] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (debtToEdit) {
@@ -60,6 +61,7 @@ export function TransactionForm({ onAdd, onUpdate, debtToEdit, onCancelEdit, cat
     setIsFixed(false);
     setTotalInstallments('');
     setCurrentInstallment('');
+    setErrors({});
   };
 
   const handleClose = () => {
@@ -72,10 +74,30 @@ export function TransactionForm({ onAdd, onUpdate, debtToEdit, onCancelEdit, cat
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description || !amount || !category || !dueDate) return;
+    
+    const newErrors: Record<string, string> = {};
+    if (!description.trim()) {
+      newErrors.description = 'Campo obrigatório';
+    }
+    if (!amount.trim()) {
+      newErrors.amount = 'Campo obrigatório';
+    } else if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      newErrors.amount = 'Valor inválido';
+    }
+    if (!dueDate) {
+      newErrors.dueDate = 'Selecione uma data';
+    }
+    if (!category) {
+      newErrors.category = 'Selecione uma categoria';
+    }
 
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount)) return;
 
     const debtData = {
       description,
@@ -137,41 +159,59 @@ export function TransactionForm({ onAdd, onUpdate, debtToEdit, onCancelEdit, cat
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-xs uppercase font-bold tracking-widest opacity-40 ml-1 flex items-center gap-2">
-                        <Tag size={12} /> Descrição
+                        <Tag size={12} /> Descrição {errors.description && <span className="text-rose-500 font-bold">({errors.description})</span>}
                       </label>
                       <input
                         autoFocus
                         type="text"
                         placeholder="Ex: Cartão de Crédito, Empréstimo..."
                         value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-accent/50 outline-none transition-all placeholder:opacity-20 text-base"
+                        onChange={(e) => {
+                          setDescription(e.target.value);
+                          if (errors.description) setErrors(prev => ({ ...prev, description: '' }));
+                        }}
+                        className={cn(
+                          "w-full bg-white/5 border rounded-2xl px-5 py-4 focus:ring-2 outline-none transition-all placeholder:opacity-20 text-base",
+                          errors.description ? "border-rose-500/50 focus:ring-rose-500/30" : "border-white/10 focus:ring-accent/50"
+                        )}
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-xs uppercase font-bold tracking-widest opacity-40 ml-1 flex items-center gap-2">
-                          <DollarSign size={12} /> Valor
+                          <DollarSign size={12} /> Valor {errors.amount && <span className="text-rose-500 font-bold">({errors.amount})</span>}
                         </label>
                           <input
                             type="number"
                             step="0.01"
                             placeholder="0,00"
                             value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-accent/50 outline-none transition-all placeholder:opacity-20 text-base"
+                            onChange={(e) => {
+                              setAmount(e.target.value);
+                              if (errors.amount) setErrors(prev => ({ ...prev, amount: '' }));
+                            }}
+                            className={cn(
+                              "w-full bg-white/5 border rounded-2xl px-5 py-4 focus:ring-2 outline-none transition-all placeholder:opacity-20 text-base",
+                              errors.amount ? "border-rose-500/50 focus:ring-rose-500/30" : "border-white/10 focus:ring-accent/50"
+                            )}
                           />
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs uppercase font-bold tracking-widest opacity-40 ml-1 flex items-center gap-2">
-                          <Calendar size={12} /> Vencimento
+                          <Calendar size={12} /> Vencimento {errors.dueDate && <span className="text-rose-500 font-bold">({errors.dueDate})</span>}
                         </label>
                           <input
                             type="date"
                             value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-accent/50 outline-none transition-all [color-scheme:dark] text-base"
+                            onChange={(e) => {
+                              setDueDate(e.target.value);
+                              if (errors.dueDate) setErrors(prev => ({ ...prev, dueDate: '' }));
+                            }}
+                            className={cn(
+                              "w-full bg-white/5 border rounded-2xl px-5 py-4 focus:ring-2 outline-none transition-all [color-scheme:dark] text-base",
+                              errors.dueDate ? "border-rose-500/50 focus:ring-rose-500/30" : "border-white/10 focus:ring-accent/50"
+                            )}
                           />
                       </div>
                     </div>
@@ -241,7 +281,10 @@ export function TransactionForm({ onAdd, onUpdate, debtToEdit, onCancelEdit, cat
 
                     <div className="space-y-4">
                       <label className="text-xs uppercase font-bold tracking-widest opacity-40 ml-1 flex items-center justify-between">
-                        <span>Categoria</span>
+                        <span className="flex items-center gap-2">
+                          Categoria 
+                          {errors.category && <span className="text-rose-500 font-bold">({errors.category})</span>}
+                        </span>
                         {category && !(categories || []).some(c => c && c.name === category) && (
                           <span className="text-[10px] text-accent lowercase">Personalizada: {category}</span>
                         )}
@@ -257,7 +300,10 @@ export function TransactionForm({ onAdd, onUpdate, debtToEdit, onCancelEdit, cat
                             <button
                               key={cat.id}
                               type="button"
-                              onClick={() => setCategory(cat.name)}
+                              onClick={() => {
+                                setCategory(cat.name);
+                                if (errors.category) setErrors(prev => ({ ...prev, category: '' }));
+                              }}
                               className="flex flex-col items-center gap-2 group outline-none"
                             >
                               <motion.div
@@ -296,7 +342,10 @@ export function TransactionForm({ onAdd, onUpdate, debtToEdit, onCancelEdit, cat
                           type="text"
                           placeholder="Outra categoria..."
                           value={category && !(categories || []).some(c => c && c.name === category) ? category : ''}
-                          onChange={(e) => setCategory(e.target.value)}
+                          onChange={(e) => {
+                            setCategory(e.target.value);
+                            if (errors.category) setErrors(prev => ({ ...prev, category: '' }));
+                          }}
                           className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-accent/50 outline-none transition-all placeholder:opacity-20 text-xs font-medium"
                         />
                       </div>
