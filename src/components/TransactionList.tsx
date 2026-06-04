@@ -2,10 +2,10 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Debt, Category } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
-import { Trash2, CheckCircle2, Circle, Calendar, Edit3, Tag, CreditCard, Home, Zap, HeartPulse, GraduationCap, PartyPopper, ShoppingBag, DollarSign, LucideIcon, TrendingUp, Filter, ChevronLeft, ChevronRight, FileDown, CheckSquare, Square } from 'lucide-react';
+import { Trash2, CheckCircle2, Circle, Calendar, Edit3, Tag, CreditCard, Home, Zap, HeartPulse, GraduationCap, PartyPopper, ShoppingBag, DollarSign, LucideIcon, TrendingUp, Filter, ChevronLeft, ChevronRight, FileDown, CheckSquare, Square, Share2, Eye, Download, X, Send } from 'lucide-react';
 import { format, addMonths, isSameMonth, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -44,6 +44,53 @@ export function TransactionList({
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [pdfActionModal, setPdfActionModal] = useState<{
+    blobUrl: string;
+    fileName: string;
+    blob: Blob | null;
+    debts: Debt[];
+  } | null>(null);
+
+  const closePdfModal = () => {
+    if (pdfActionModal?.blobUrl) {
+      URL.revokeObjectURL(pdfActionModal.blobUrl);
+    }
+    setPdfActionModal(null);
+  };
+
+  const getSelectedDebtsTextFor = (debtsToExport: Debt[]) => {
+    if (debtsToExport.length === 0) return '';
+    const isSingle = debtsToExport.length === 1;
+
+    if (isSingle) {
+      const d = debtsToExport[0];
+      const statusText = d.status === 'paid' ? '✅ Pago' : '⏳ Pendente';
+      const typeText = d.isInstallment && !d.isFixed ? ` (Parcela ${d.currentInstallment}/${d.totalInstallments})` : (d.isFixed ? ' (Fixa)' : ' (Avulsa)');
+      let text = `*Comprovante de Débito*\n`;
+      text = text + `----------------------------\n`;
+      text = text + `📝 *Descrição:* ${d.description}${typeText}\n`;
+      text = text + `📅 *Vencimento:* ${new Date(d.dueDate).toLocaleDateString('pt-BR')}\n`;
+      text = text + `💰 *Valor:* *${formatCurrency(d.amount)}*\n`;
+      text = text + `📌 *Status:* ${statusText}\n\n`;
+      text = text + `_Enviado via Controle de Débitos_`;
+      return encodeURIComponent(text);
+    } else {
+      let text = `*Relatório de Débitos - ${selectedMonthLabel}*\n`;
+      text = text + `_Gerado em: ${new Date().toLocaleDateString('pt-BR')}_\n\n`;
+
+      debtsToExport.forEach((d, idx) => {
+        const statusText = d.status === 'paid' ? '✅ Pago' : '⏳ Pendente';
+        const typeText = d.isInstallment && !d.isFixed ? ` (Parcela ${d.currentInstallment}/${d.totalInstallments})` : (d.isFixed ? ' (Fixa)' : ' (Avulsa)');
+        text = text + `*${idx + 1}. ${d.description}*${typeText}\n`;
+        text = text + `   📅 Vencimento: ${new Date(d.dueDate).toLocaleDateString('pt-BR')}\n`;
+        text = text + `   💰 Valor: *${formatCurrency(d.amount)}* | ${statusText}\n\n`;
+      });
+
+      const total = debtsToExport.reduce((sum, d) => sum + Number(d.amount), 0);
+      text = text + `*Total Selecionado:* *${formatCurrency(total)}*`;
+      return encodeURIComponent(text);
+    }
+  };
 
   const selectedDate = useMemo(() => startOfMonth(addMonths(new Date(), monthOffset)), [monthOffset]);
   const selectedMonthLabel = format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
@@ -63,49 +110,147 @@ export function TransactionList({
     }
   };
 
-  const exportToPDF = () => {
-    const debtsToExport = displayedDebts.filter(d => selectedIds.has(d.id));
+  const shareDebts = async (debtsToExport: Debt[]) => {
     if (debtsToExport.length === 0) return;
 
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(20);
-    doc.text('Relatório de Débitos - ' + selectedMonthLabel, 14, 22);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR'), 14, 30);
+    try {
+      const doc = new jsPDF();
+      const isSingle = debtsToExport.length === 1;
+      const singleDebt = debtsToExport[0];
 
-    const tableRows = debtsToExport.map(d => [
-      d.description,
-      d.category || 'Sem Categoria',
-      new Date(d.dueDate).toLocaleDateString('pt-BR'),
-      d.status === 'paid' ? 'Pago' : 'Pendente',
-      d.isInstallment && !d.isFixed ? `${d.currentInstallment}/${d.totalInstallments}` : (d.isFixed ? 'Fixa' : 'Avulsa'),
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(d.amount)
-    ]);
+      if (isSingle) {
+        // Aesthetic individual receipt design (receipt format)
+        doc.setFillColor(15, 15, 20); // Deep dark blue-gray modern background
+        doc.rect(10, 10, 190, 85, 'F');
 
-    autoTable(doc, {
-      startY: 40,
-      head: [['Descrição', 'Categoria', 'Vencimento', 'Status', 'Tipo/Parcela', 'Valor']],
-      body: tableRows,
-      theme: 'striped',
-      headStyles: { fillColor: [99, 102, 241] }, // Accent color #6366f1
-      styles: { fontSize: 9 },
-      columnStyles: {
-        5: { halign: 'right', fontStyle: 'bold' }
+        doc.setFillColor(99, 102, 241); // Indigo header top accent bar
+        doc.rect(10, 10, 190, 4, 'F');
+
+        doc.setFontSize(16);
+        doc.setTextColor(255, 255, 255);
+        doc.text('DETALHAMENTO DE DÉBITO', 16, 24);
+
+        doc.setFontSize(9);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Gerado via Controle de Débitos em: ${new Date().toLocaleString('pt-BR')}`, 16, 30);
+
+        const tableRows = [
+          ['Descrição:', singleDebt.description],
+          ['Categoria:', singleDebt.category || 'Sem Categoria'],
+          ['Vencimento:', new Date(singleDebt.dueDate).toLocaleDateString('pt-BR')],
+          ['Status:', singleDebt.status === 'paid' ? 'PAGO' : 'PENDENTE'],
+          ['Tipo:', singleDebt.isInstallment && !singleDebt.isFixed 
+            ? `Parcelado (${singleDebt.currentInstallment}/${singleDebt.totalInstallments})` 
+            : (singleDebt.isFixed ? 'Fixo Mensal' : 'Avulso')],
+          ['Valor:', new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(singleDebt.amount)]
+        ];
+
+        autoTable(doc, {
+          startY: 36,
+          body: tableRows,
+          theme: 'plain',
+          styles: { fontSize: 10, cellPadding: 3.5, textColor: [220, 220, 220] },
+          columnStyles: {
+            0: { fontStyle: 'bold', textColor: [99, 102, 241], cellWidth: 40 },
+            1: { halign: 'left' }
+          }
+        });
+
+        // Add visual stamp
+        const finalY = (doc as any).lastAutoTable.finalY + 8;
+        if (singleDebt.status === 'paid') {
+          doc.setDrawColor(16, 185, 129);
+          doc.setLineWidth(1.5);
+          doc.rect(16, finalY, 36, 10);
+          doc.setFontSize(9);
+          doc.setTextColor(16, 185, 129);
+          doc.text('QUITADO', 24, finalY + 7);
+        } else {
+          doc.setDrawColor(244, 63, 94);
+          doc.setLineWidth(1.5);
+          doc.rect(16, finalY, 36, 10);
+          doc.setFontSize(9);
+          doc.setTextColor(244, 63, 94);
+          doc.text('PENDENTE', 23, finalY + 7);
+        }
+      } else {
+        // Multiple debt report
+        doc.setFontSize(20);
+        doc.text('Relatório de Débitos - ' + selectedMonthLabel, 14, 22);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR'), 14, 30);
+
+        const tableRows = debtsToExport.map(d => [
+          d.description,
+          d.category || 'Sem Categoria',
+          new Date(d.dueDate).toLocaleDateString('pt-BR'),
+          d.status === 'paid' ? 'Pago' : 'Pendente',
+          d.isInstallment && !d.isFixed ? `${d.currentInstallment}/${d.totalInstallments}` : (d.isFixed ? 'Fixa' : 'Avulsa'),
+          new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(d.amount)
+        ]);
+
+        autoTable(doc, {
+          startY: 40,
+          head: [['Descrição', 'Categoria', 'Vencimento', 'Status', 'Tipo/Parcela', 'Valor']],
+          body: tableRows,
+          theme: 'striped',
+          headStyles: { fillColor: [99, 102, 241] }, // Accent color #6366f1
+          styles: { fontSize: 9 },
+          columnStyles: {
+            5: { halign: 'right', fontStyle: 'bold' }
+          }
+        });
+
+        const total = debtsToExport.reduce((sum, d) => sum + Number(d.amount), 0);
+        const finalY = (doc as any).lastAutoTable.finalY + 10;
+        
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Total do Período: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}`, 14, finalY);
       }
-    });
 
-    const total = debtsToExport.reduce((sum, d) => sum + Number(d.amount), 0);
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text(`Total do Período: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}`, 14, finalY);
+      const blob = doc.output('blob');
+      const prefix = isSingle ? `comprovante-${singleDebt.description.toLowerCase().replace(/[^a-z0-9]/g, '-')}` : 'relatorio-debitos';
+      const fileName = `${prefix}-${selectedMonthLabel.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`;
+      const blobUrl = URL.createObjectURL(blob);
 
-    doc.save(`relatorio-debitos-${selectedMonthLabel.toLowerCase().replace(/ /g, '-')}.pdf`);
+      setPdfActionModal({
+        blob,
+        blobUrl,
+        fileName,
+        debts: debtsToExport
+      });
+
+      // Try triggering navigator.share immediately
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: isSingle ? 'Comprovante de Débito' : 'Relatório de Débitos',
+            text: isSingle 
+              ? `Seguem os detalhes do débito: ${singleDebt.description} - ${formatCurrency(singleDebt.amount)}.`
+              : `Seguem os débitos de ${selectedMonthLabel}.`
+          });
+        } catch (shareError: any) {
+          console.warn("Share ignorado pelo usuário ou falhou:", shareError);
+        }
+      } else {
+        // Fallback WhatsApp message opened instantly
+        const textToShare = getSelectedDebtsTextFor(debtsToExport);
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${textToShare}`;
+        window.open(whatsappUrl, '_blank');
+      }
+    } catch (e) {
+      console.error("Erro no processamento do PDF:", e);
+    }
+  };
+
+  const exportToPDF = () => {
+    const debtsToExport = displayedDebts.filter(d => selectedIds.has(d.id));
+    shareDebts(debtsToExport);
   };
 
   // Project debts for the selected month
@@ -413,8 +558,14 @@ export function TransactionList({
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.01 }}
+                            onClick={() => {
+                              if (isSelectionMode) {
+                                toggleSelection(d.id);
+                              }
+                            }}
+                            style={{ cursor: isSelectionMode ? 'pointer' : 'default' }}
                             className={cn(
-                              "group glass p-3 rounded-[20px] flex items-center justify-between hover:bg-white/[0.04] transition-all border border-white/5 relative overflow-hidden",
+                              "group glass p-3 rounded-[20px] flex items-center justify-between hover:bg-white/[0.04] transition-all border border-white/5 relative overflow-hidden select-none",
                               d.status === 'paid' && "opacity-50 grayscale-[0.5]",
                               isVirtual && "border-dashed border-white/10 bg-white/[0.01]",
                               isLastInstallment && "border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_20px_rgba(16,185,129,0.05)]"
@@ -456,7 +607,11 @@ export function TransactionList({
 
                               {isSelectionMode ? (
                                 <button
-                                  onClick={() => toggleSelection(d.id)}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleSelection(d.id);
+                                  }}
                                   className={cn(
                                     "min-w-[2.5rem] min-h-[2.5rem] rounded-xl flex items-center justify-center transition-all shrink-0",
                                     selectedIds.has(d.id) 
@@ -468,7 +623,11 @@ export function TransactionList({
                                 </button>
                               ) : (
                                 <button 
-                                  onClick={() => !isVirtual && onToggleStatus(d.id)}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isVirtual) onToggleStatus(d.id);
+                                  }}
                                   disabled={isVirtual}
                                   className={cn(
                                     "min-w-[2.5rem] min-h-[2.5rem] rounded-xl flex items-center justify-center transition-all shrink-0",
@@ -519,7 +678,19 @@ export function TransactionList({
                                 {formatCurrency(d.amount)}
                               </span>
                               
-                              <div className="flex items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity relative z-10">
+                              <div className="flex items-center gap-2 opacity-100 md:opacity-50 md:group-hover:opacity-100 transition-opacity relative z-10">
+                                <button 
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    shareDebts([d]);
+                                  }}
+                                  className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5 p-1 cursor-pointer"
+                                  title="Enviar PDF instantaneamente"
+                                >
+                                  <Send size={12} className="text-emerald-400" />
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">PDF</span>
+                                </button>
                                 <button 
                                   type="button"
                                   onClick={(e) => {
@@ -560,6 +731,127 @@ export function TransactionList({
             </div>
           </div>
         )}
+
+        {/* Modal de Envio / Exportação do PDF */}
+        <AnimatePresence>
+          {pdfActionModal && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={closePdfModal}
+                className="absolute inset-0 bg-black/85 backdrop-blur-md"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative w-full max-w-md bg-[#0d0d0d] border border-white/10 rounded-[32px] p-8 shadow-2xl overflow-hidden text-left"
+              >
+                {/* Decorative accent lines */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent via-violet-500 to-fuchsia-500 shadow-[0_0_20px_rgba(99,102,241,0.5)]" />
+                
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center text-accent shadow-sm">
+                    <FileDown size={28} />
+                  </div>
+                  <button 
+                    onClick={closePdfModal}
+                    className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">Relatório Gerado!</h3>
+                <p className="text-white/40 text-sm mb-6 leading-relaxed">
+                  O relatório das dívidas selecionadas foi compilado com sucesso. Como deseja enviar ou baixar?
+                </p>
+
+                <div className="space-y-3">
+                  {/* 1. Compartilhar / Enviar via WebShare API */}
+                  <button 
+                    onClick={async () => {
+                      try {
+                        if (!pdfActionModal.blob) return;
+                        const file = new File([pdfActionModal.blob], pdfActionModal.fileName, { type: 'application/pdf' });
+                        
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                          await navigator.share({
+                            files: [file],
+                            title: 'Relatório de Débitos',
+                            text: `Segue em anexo o relatório de débitos.`
+                          });
+                        } else {
+                          // Falls back to direct styled text sharing on WhatsApp
+                          const whatsappUrl = `https://api.whatsapp.com/send?text=${getSelectedDebtsTextFor(pdfActionModal.debts)}`;
+                          window.open(whatsappUrl, '_blank');
+                        }
+                      } catch (error: any) {
+                        console.error("Erro ao compartilhar arquivo PDF:", error);
+                        // Fallback automatically to WhatsApp text if not cancelled
+                        if (error && error.name !== 'AbortError') {
+                          const whatsappUrl = `https://api.whatsapp.com/send?text=${getSelectedDebtsTextFor(pdfActionModal.debts)}`;
+                          window.open(whatsappUrl, '_blank');
+                        }
+                      }
+                    }}
+                    className="w-full py-4 bg-accent text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] shadow-lg shadow-accent/20 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer"
+                  >
+                    <Share2 size={16} />
+                    Compartilhar PDF (Sistema)
+                  </button>
+
+                  {/* 2. WhatsApp Text Share alternative (perfectly robust) */}
+                  <button 
+                    onClick={() => {
+                      const whatsappUrl = `https://api.whatsapp.com/send?text=${getSelectedDebtsTextFor(pdfActionModal.debts)}`;
+                      window.open(whatsappUrl, '_blank');
+                    }}
+                    className="w-full py-4 bg-[#25D366] text-black rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] shadow-lg shadow-[#25D366]/20 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer"
+                  >
+                    <Send size={16} />
+                    Enviar Resumo no WhatsApp (Texto)
+                  </button>
+
+                  {/* 3. Visualizar em nova aba */}
+                  <a 
+                    href={pdfActionModal.blobUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-3 text-white cursor-pointer"
+                  >
+                    <Eye size={16} />
+                    Visualizar PDF (Nova Aba)
+                  </a>
+
+                  {/* 4. Baixar PDF */}
+                  <a 
+                    href={pdfActionModal.blobUrl} 
+                    download={pdfActionModal.fileName}
+                    onClick={() => {
+                      setTimeout(closePdfModal, 500);
+                    }}
+                    className="w-full py-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-3 cursor-pointer"
+                  >
+                    <Download size={16} />
+                    Baixar PDF (Download)
+                  </a>
+                </div>
+
+                <div className="mt-5 p-3 rounded-xl bg-white/[0.02] border border-white/5 text-[10px] text-white/40 leading-relaxed">
+                  💡 <strong className="text-white/60">Dica Mobile:</strong> Se o download de arquivos falhar devido ao navegador interno do celular ou iframe, escolha a opção verde <strong className="text-emerald-400">"WhatsApp (Texto)"</strong> ou abra em <strong className="text-white/60">"Nova Aba"</strong> para salvar nativamente.
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-white/30">
+                  <span>Selecionados: {pdfActionModal.debts.length}</span>
+                  <span>Total: {formatCurrency(pdfActionModal.debts.reduce((sum, d) => sum + Number(d.amount), 0))}</span>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     );
 }
