@@ -642,7 +642,7 @@ export function TransactionList({
                               
                               <div className="min-w-0">
                                 <h4 className={cn(
-                                  "font-bold text-base leading-tight mb-1 truncate",
+                                  "font-bold text-base leading-tight mb-1 break-words",
                                   d.status === 'paid' ? "line-through opacity-50" : "text-accent",
                                   isVirtual && "opacity-60 italic"
                                 )}>{d.description}</h4>
