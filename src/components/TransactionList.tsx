@@ -565,7 +565,7 @@ export function TransactionList({
                             }}
                             style={{ cursor: isSelectionMode ? 'pointer' : 'default' }}
                             className={cn(
-                              "group glass p-3 rounded-[20px] flex items-center justify-between hover:bg-white/[0.04] transition-all border border-white/5 relative overflow-hidden select-none",
+                              "group glass p-2 sm:p-3 rounded-[20px] flex items-center justify-between hover:bg-white/[0.04] transition-all border border-white/5 relative overflow-hidden select-none",
                               d.status === 'paid' && "opacity-50 grayscale-[0.5]",
                               isVirtual && "border-dashed border-white/10 bg-white/[0.01]",
                               isLastInstallment && "border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_20px_rgba(16,185,129,0.05)]"
@@ -587,7 +587,7 @@ export function TransactionList({
                               </div>
                             )}
 
-                            <div className="flex items-center gap-3 py-1 min-w-0 flex-1 relative">
+                            <div className="flex items-center gap-2 sm:gap-3 py-1 min-w-0 flex-1 relative">
                               {/* Paid Stamp */}
                               <AnimatePresence>
                                 {d.status === 'paid' && (
@@ -640,9 +640,9 @@ export function TransactionList({
                                 </button>
                               )}
                               
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <h4 className={cn(
-                                  "font-bold text-base leading-tight mb-1 break-words",
+                                  "font-bold text-sm sm:text-base leading-tight mb-1 line-clamp-2",
                                   d.status === 'paid' ? "line-through opacity-50" : "text-accent",
                                   isVirtual && "opacity-60 italic"
                                 )}>{d.description}</h4>
@@ -670,9 +670,9 @@ export function TransactionList({
                               </div>
                             </div>
 
-                            <div className="flex flex-col items-end gap-1">
+                            <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
                               <span className={cn(
-                                "text-lg font-bold tracking-tighter",
+                                "text-base sm:text-lg font-bold tracking-tighter",
                                 d.status === 'paid' ? "text-white/40" : (isOverdue && !isVirtual ? "text-rose-500" : (isVirtual ? "text-white/30" : "text-accent"))
                               )}>
                                 {formatCurrency(d.amount)}
@@ -689,7 +689,7 @@ export function TransactionList({
                                   title="Enviar PDF instantaneamente"
                                 >
                                   <Send size={12} className="text-emerald-400" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">PDF</span>
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 hidden sm:inline">PDF</span>
                                 </button>
                                 <button 
                                   type="button"
