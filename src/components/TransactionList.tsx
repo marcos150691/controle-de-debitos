@@ -565,7 +565,7 @@ export function TransactionList({
                             }}
                             style={{ cursor: isSelectionMode ? 'pointer' : 'default' }}
                             className={cn(
-                              "group glass p-2 sm:p-3 rounded-[20px] flex items-center justify-between hover:bg-white/[0.04] transition-all border border-white/5 relative overflow-hidden select-none",
+                              "group glass p-2 rounded-[18px] flex items-center justify-between hover:bg-white/[0.04] transition-all border border-white/5 relative overflow-hidden select-none",
                               d.status === 'paid' && "opacity-50 grayscale-[0.5]",
                               isVirtual && "border-dashed border-white/10 bg-white/[0.01]",
                               isLastInstallment && "border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_20px_rgba(16,185,129,0.05)]"
@@ -587,7 +587,7 @@ export function TransactionList({
                               </div>
                             )}
 
-                            <div className="flex items-center gap-2 sm:gap-3 py-1 min-w-0 flex-1 relative">
+                            <div className="flex items-center gap-2 py-0.5 min-w-0 flex-1 relative">
                               {/* Paid Stamp */}
                               <AnimatePresence>
                                 {d.status === 'paid' && (
@@ -606,63 +606,63 @@ export function TransactionList({
                               </AnimatePresence>
 
                               {isSelectionMode ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleSelection(d.id);
-                                  }}
-                                  className={cn(
-                                    "min-w-[2.5rem] min-h-[2.5rem] rounded-xl flex items-center justify-center transition-all shrink-0",
-                                    selectedIds.has(d.id) 
-                                      ? "bg-accent text-white shadow-lg shadow-accent/40" 
-                                      : "bg-white/5 text-white/20 hover:text-white/40"
-                                  )}
-                                >
-                                  {selectedIds.has(d.id) ? <CheckSquare size={20} /> : <Square size={20} />}
-                                </button>
-                              ) : (
-                                <button 
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!isVirtual) onToggleStatus(d.id);
-                                  }}
-                                  disabled={isVirtual}
-                                  className={cn(
-                                    "min-w-[2.5rem] min-h-[2.5rem] rounded-xl flex items-center justify-center transition-all shrink-0",
-                                    d.status === 'paid' 
-                                      ? "bg-emerald-500/20 text-emerald-400" 
-                                      : (isVirtual ? "bg-white/5 text-white/10" : (isOverdue ? "bg-rose-500/20 text-rose-500" : "bg-accent/10 text-accent/60 hover:text-accent"))
-                                  )}
-                                >
-                                  {d.status === 'paid' ? <CheckCircle2 size={18} /> : <Circle size={18} />}
-                                </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSelection(d.id);
+                                    }}
+                                    className={cn(
+                                      "min-w-[2.25rem] min-h-[2.25rem] rounded-xl flex items-center justify-center transition-all shrink-0",
+                                      selectedIds.has(d.id) 
+                                        ? "bg-accent text-white shadow-lg shadow-accent/40" 
+                                        : "bg-white/5 text-white/20 hover:text-white/40"
+                                    )}
+                                  >
+                                    {selectedIds.has(d.id) ? <CheckSquare size={18} /> : <Square size={18} />}
+                                  </button>
+                                ) : (
+                                  <button 
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!isVirtual) onToggleStatus(d.id);
+                                    }}
+                                    disabled={isVirtual}
+                                    className={cn(
+                                      "min-w-[2.25rem] min-h-[2.25rem] rounded-xl flex items-center justify-center transition-all shrink-0",
+                                      d.status === 'paid' 
+                                        ? "bg-emerald-500/20 text-emerald-400" 
+                                        : (isVirtual ? "bg-white/5 text-white/10" : (isOverdue ? "bg-rose-500/20 text-rose-500" : "bg-accent/10 text-accent/60 hover:text-accent"))
+                                    )}
+                                  >
+                                    {d.status === 'paid' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                                  </button>
                               )}
                               
-                              <div className="min-w-0 flex-1">
-                                <h4 className={cn(
-                                  "font-bold text-sm sm:text-base leading-tight mb-1 line-clamp-2",
-                                  d.status === 'paid' ? "line-through opacity-50" : "text-accent",
-                                  isVirtual && "opacity-60 italic"
-                                )}>{d.description}</h4>
+                                <div className="min-w-0 flex-1">
+                                  <h4 className={cn(
+                                    "font-bold text-xs sm:text-base leading-tight mb-0.5 truncate",
+                                    d.status === 'paid' ? "line-through opacity-50" : "text-accent",
+                                    isVirtual && "opacity-60 italic"
+                                  )}>{d.description}</h4>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className={cn(
-                                    "flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest",
-                                    isOverdue && !isVirtual ? "text-rose-500" : (d.status === 'paid' ? "text-white/20" : "text-accent/40")
-                                  )}>
-                                    <Calendar size={10} />
-                                    {safeFormatDate(d.dueDate)}
-                                  </span>
+                                    <span className={cn(
+                                      "flex items-center gap-1 text-[9px] sm:text-[11px] font-bold uppercase tracking-widest",
+                                      isOverdue && !isVirtual ? "text-rose-500" : (d.status === 'paid' ? "text-white/20" : "text-accent/40")
+                                    )}>
+                                      <Calendar size={9} />
+                                      {safeFormatDate(d.dueDate)}
+                                    </span>
 
                                   {d.isInstallment && !d.isFixed && (
-                                    <span className="text-sm font-black bg-accent/10 text-accent px-2 py-0.5 rounded-md border border-accent/10">
+                                    <span className="text-[10px] sm:text-sm font-black bg-accent/10 text-accent px-1.5 py-0.5 rounded border border-accent/10">
                                       {d.currentInstallment}/{d.totalInstallments}
                                     </span>
                                   )}
 
                                   {d.isFixed && (
-                                    <span className="text-sm font-black bg-accent/10 text-accent px-2 py-0.5 rounded-md border border-accent/10 uppercase tracking-widest">
+                                    <span className="text-[10px] sm:text-sm font-black bg-accent/10 text-accent px-1.5 py-0.5 rounded border border-accent/10 uppercase tracking-widest">
                                       FIXA
                                     </span>
                                   )}
@@ -670,9 +670,9 @@ export function TransactionList({
                               </div>
                             </div>
 
-                            <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                            <div className="flex flex-col items-end gap-0.5 ml-2 shrink-0">
                               <span className={cn(
-                                "text-base sm:text-lg font-bold tracking-tighter",
+                                "text-sm sm:text-lg font-bold tracking-tighter whitespace-nowrap",
                                 d.status === 'paid' ? "text-white/40" : (isOverdue && !isVirtual ? "text-rose-500" : (isVirtual ? "text-white/30" : "text-accent"))
                               )}>
                                 {formatCurrency(d.amount)}
