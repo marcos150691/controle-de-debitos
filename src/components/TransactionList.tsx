@@ -613,7 +613,9 @@ export function TransactionList({
                                 </span>
                               </div>
 
-                              <h4 className={cn(
+                              <h4 
+                                title={d.description}
+                                className={cn(
                                 "font-bold text-sm leading-tight mb-2 line-clamp-2",
                                 d.status === 'paid' && "line-through opacity-50"
                               )}>
@@ -626,9 +628,16 @@ export function TransactionList({
                                     {safeFormatDate(d.dueDate)}
                                   </span>
                                   {d.isInstallment && !d.isFixed && (
-                                    <span className="text-[8px] font-black bg-accent/20 text-accent px-1 rounded inline-block w-fit">
-                                      {d.currentInstallment}/{d.totalInstallments}
-                                    </span>
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      <span className="text-[8px] font-black bg-accent/20 text-accent px-1 rounded inline-block w-fit">
+                                        {d.currentInstallment}/{d.totalInstallments}
+                                      </span>
+                                      {isLastInstallment && (
+                                        <span className="text-[7px] font-black bg-emerald-500/20 text-emerald-400 px-1 rounded inline-block w-fit uppercase tracking-widest">
+                                          Última
+                                        </span>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
 
@@ -674,14 +683,6 @@ export function TransactionList({
                               <div className="absolute top-0 right-0">
                                 <div className="bg-accent/10 border-b border-l border-white/5 px-2 py-0.5 rounded-bl-xl">
                                   <span className="text-[10px] font-black uppercase text-accent tracking-[0.2em]">Previsto</span>
-                                </div>
-                              </div>
-                            )}
-
-                            {isLastInstallment && (
-                              <div className="absolute top-0 left-1/2 -translate-x-1/2">
-                                <div className="bg-emerald-500 text-black px-3 py-0.5 rounded-b-xl">
-                                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Última Parcela</span>
                                 </div>
                               </div>
                             )}
@@ -740,7 +741,9 @@ export function TransactionList({
                               )}
                               
                                 <div className="min-w-0 flex-1">
-                                  <h4 className={cn(
+                                  <h4 
+                                    title={d.description}
+                                    className={cn(
                                     "font-bold text-sm sm:text-base leading-tight mb-0.5 line-clamp-2",
                                     d.status === 'paid' ? "line-through opacity-50" : "text-accent",
                                     isVirtual && "opacity-60 italic"
@@ -755,9 +758,16 @@ export function TransactionList({
                                     </span>
 
                                   {d.isInstallment && !d.isFixed && (
-                                    <span className="text-[10px] sm:text-sm font-black bg-accent/10 text-accent px-1.5 py-0.5 rounded border border-accent/10">
-                                      {d.currentInstallment}/{d.totalInstallments}
-                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] sm:text-sm font-black bg-accent/10 text-accent px-1.5 py-0.5 rounded border border-accent/10">
+                                        {d.currentInstallment}/{d.totalInstallments}
+                                      </span>
+                                      {isLastInstallment && (
+                                        <span className="text-[8px] sm:text-[10px] font-black bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20 uppercase tracking-widest">
+                                          Última Parcela
+                                        </span>
+                                      )}
+                                    </div>
                                   )}
 
                                   {d.isFixed && (

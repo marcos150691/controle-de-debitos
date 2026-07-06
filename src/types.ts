@@ -25,4 +25,7 @@ export interface DebtStats {
   totalPending: number;
   totalPaid: number;
   debtCount: number;
+  displayedDebtsForMonth: Debt[];
+  currentMonthTotal: number;
+  previousMonthTotal: number;
 }

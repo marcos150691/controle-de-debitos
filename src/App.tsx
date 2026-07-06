@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, FormEvent, Component, ReactNode, ErrorInfo } from 'react';
-import { Wallet, ShieldAlert, CheckCircle2, LayoutDashboard, Settings, LogOut, ReceiptText, Camera, Tag, CreditCard, Home, Zap, HeartPulse, GraduationCap, PartyPopper, ShoppingBag, Plus as PlusIcon, Trash2, DollarSign, LucideIcon } from 'lucide-react';
+import { Wallet, PieChart as PieChartIcon, ShieldAlert, CheckCircle2, LayoutDashboard, Settings, LogOut, ReceiptText, Camera, Tag, CreditCard, Home, Zap, HeartPulse, GraduationCap, PartyPopper, ShoppingBag, Plus as PlusIcon, Trash2, DollarSign, LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { addMonths, isSameMonth, startOfMonth } from 'date-fns';
 import { Debt, DebtStatus, DebtStats, Category } from './types';
@@ -13,6 +13,7 @@ import { StatCard } from './components/StatCard';
 import { TransactionList } from './components/TransactionList';
 import { TransactionForm } from './components/TransactionForm';
 import { ReceiptManager } from './components/ReceiptManager';
+import { CategoryChart } from './components/CategoryChart';
 
 function CategoryCreator({ onAdd }: { onAdd: (name: string, icon: string, color: string) => void }) {
   const [name, setName] = useState('');
@@ -197,7 +198,7 @@ export default function App() {
     ];
   });
 
-  const [activeTab, setActiveTab] = useState<'debts' | 'receipts' | 'settings'>('debts');
+  const [activeTab, setActiveTab] = useState<'debts' | 'receipts' | 'stats' | 'settings'>('debts');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [themeColor, setThemeColor] = useState('#6366f1');
   const [monthOffset, setMonthOffset] = useState(0);
@@ -242,89 +243,104 @@ export default function App() {
       console.error("Error saving categories:", e);
     }
   }, [categories]);
-
   const stats: DebtStats = useMemo(() => {
     try {
-      const selectedDate = startOfMonth(addMonths(new Date(), monthOffset));
-      
-      // Project debts for the selected month to calculate accurate stats
-      const currentMonthReal = debts.filter(d => {
-        if (!d || !d.dueDate) return false;
-        const dDate = new Date(d.dueDate);
-        return !isNaN(dDate.getTime()) && isSameMonth(dDate, selectedDate);
-      });
-      
-      let displayedDebtsForMonth = currentMonthReal;
+      const getDebtsForMonth = (offset: number) => {
+        const selectedDate = startOfMonth(addMonths(new Date(), offset));
+        
+        const currentMonthReal = debts.filter(d => {
+          if (!d || !d.dueDate) return false;
+          const dDate = new Date(d.dueDate);
+          return !isNaN(dDate.getTime()) && isSameMonth(dDate, selectedDate);
+        });
 
-      // Always include recurring debts for the selected month
-      const recurringDebts = debts.filter(d => d && (d.isFixed || d.isInstallment));
-      const projected: Debt[] = [...currentMonthReal];
+        const recurringDebts = debts.filter(d => d && (d.isFixed || d.isInstallment));
+        const projected: Debt[] = [...currentMonthReal];
 
-      recurringDebts.forEach(debt => {
-        if (!debt.dueDate) return;
-        const dDate = new Date(debt.dueDate);
-        if (isNaN(dDate.getTime())) return;
+        recurringDebts.forEach(debt => {
+          if (!debt.dueDate) return;
+          const dDate = new Date(debt.dueDate);
+          if (isNaN(dDate.getTime())) return;
+          
+          const startDate = startOfMonth(dDate);
+          
+          if (selectedDate > startDate) {
+            const alreadyExists = currentMonthReal.find(d => 
+               d.description === debt.description && 
+               d.category === debt.category &&
+              (d.isFixed || d.isInstallment)
+            );
 
-        const startDate = startOfMonth(dDate);
-        if (selectedDate > startDate) {
-          const alreadyExists = currentMonthReal.find(d => 
-            d.description === debt.description && 
-            d.category === debt.category &&
-            (d.isFixed || d.isInstallment)
-          );
+            if (alreadyExists) return;
 
-          if (alreadyExists) return;
+            const monthsDiff = (selectedDate.getFullYear() - startDate.getFullYear()) * 12 + (selectedDate.getMonth() - startDate.getMonth());
+            
+            if (isNaN(monthsDiff) || monthsDiff < 0) return;
 
-          const monthsDiff = (selectedDate.getFullYear() - startDate.getFullYear()) * 12 + (selectedDate.getMonth() - startDate.getMonth());
-          if (isNaN(monthsDiff) || monthsDiff < 0) return;
-
-          if (debt.isFixed) {
-            const newDate = addMonths(dDate, monthsDiff);
-            if (!isNaN(newDate.getTime())) {
-              projected.push({
-                ...debt,
-                id: `${debt.id}-proj-${monthOffset}`,
-                dueDate: newDate.toISOString(),
-                status: 'pending',
-              } as Debt);
-            }
-          } else if (debt.isInstallment && debt.totalInstallments && debt.currentInstallment) {
-            const projectedInstallment = debt.currentInstallment + monthsDiff;
-            if (projectedInstallment <= debt.totalInstallments) {
+            if (debt.isFixed) {
               const newDate = addMonths(dDate, monthsDiff);
               if (!isNaN(newDate.getTime())) {
                 projected.push({
                   ...debt,
-                  id: `${debt.id}-proj-${monthOffset}`,
+                  id: `${debt.id}-proj-${offset}`,
                   dueDate: newDate.toISOString(),
-                  currentInstallment: projectedInstallment,
-                  status: 'pending',
+                  status: "pending",
                 } as Debt);
+              }
+            } else if (debt.isInstallment && debt.totalInstallments && debt.currentInstallment) {
+              const projectedInstallment = debt.currentInstallment + monthsDiff;
+              if (projectedInstallment <= debt.totalInstallments) {
+                const newDate = addMonths(dDate, monthsDiff);
+                if (!isNaN(newDate.getTime())) {
+                  projected.push({
+                    ...debt,
+                    id: `${debt.id}-proj-${offset}`,
+                    dueDate: newDate.toISOString(),
+                    currentInstallment: projectedInstallment,
+                    status: "pending",
+                  } as Debt);
+                }
               }
             }
           }
-        }
-      });
-      displayedDebtsForMonth = projected;
+        });
+
+        return projected;
+      };
+
+      const displayedDebtsForMonth = getDebtsForMonth(monthOffset);
+      const previousMonthDebts = getDebtsForMonth(monthOffset - 1);
 
       const totalPending = (displayedDebtsForMonth || [])
-        .filter((d) => d && d.status === 'pending')
+        .filter((d) => d && d.status === "pending")
         .reduce((acc, d) => acc + (Number(d?.amount) || 0), 0);
+
       const totalPaid = (displayedDebtsForMonth || [])
-        .filter((d) => d && d.status === 'paid')
+        .filter((d) => d && d.status === "paid")
+        .reduce((acc, d) => acc + (Number(d?.amount) || 0), 0);
+
+      const currentMonthTotal = totalPending + totalPaid;
+      
+      const previousMonthTotal = (previousMonthDebts || [])
         .reduce((acc, d) => acc + (Number(d?.amount) || 0), 0);
 
       return {
         totalPending,
         totalPaid,
-        debtCount: (displayedDebtsForMonth || []).filter(d => d && d.status === 'pending').length,
+        debtCount: (displayedDebtsForMonth || []).filter(d => d && d.status === "pending").length,
+        displayedDebtsForMonth: displayedDebtsForMonth || [],
+        currentMonthTotal,
+        previousMonthTotal
       };
     } catch (error) {
-      console.error('Error calculating stats:', error);
+      console.error("Error calculating stats:", error);
       return {
         totalPending: 0,
         totalPaid: 0,
-        debtCount: 0
+        debtCount: 0,
+        displayedDebtsForMonth: [],
+        currentMonthTotal: 0,
+        previousMonthTotal: 0
       };
     }
   }, [debts, monthOffset]);
@@ -480,6 +496,17 @@ export default function App() {
             <Camera size={24} />
           </button>
           <button 
+            onClick={() => setActiveTab("stats")}
+            className={cn(
+              "p-3 rounded-2xl transition-all",
+              activeTab === "stats" ? "text-accent bg-accent-soft" : "text-white/30 hover:text-white"
+            )}
+            title="Estatísticas"
+          >
+            <PieChartIcon size={24} />
+          </button>
+
+          <button 
             onClick={() => setActiveTab('settings')}
             className={cn(
               "p-3 rounded-2xl transition-all",
@@ -588,6 +615,15 @@ export default function App() {
 
 
             </div>
+          </div>
+        ) : activeTab === 'stats' ? (
+          <div className="max-w-4xl mx-auto mt-6">
+            <CategoryChart 
+              debts={stats.displayedDebtsForMonth} 
+              categories={categories} 
+              currentMonthTotal={stats.currentMonthTotal}
+              previousMonthTotal={stats.previousMonthTotal}
+            />
           </div>
         ) : activeTab === 'receipts' ? (
           <ReceiptManager onAddDebt={addDebt} />
@@ -741,6 +777,17 @@ export default function App() {
           <Camera size={22} />
           <span className="text-[10px] font-bold uppercase tracking-wider">Recibos</span>
         </button>
+        <button 
+          onClick={() => setActiveTab("stats")}
+          className={cn(
+            "p-3 rounded-2xl transition-all relative flex flex-col items-center gap-1",
+            activeTab === "stats" ? "text-accent bg-accent-soft" : "text-white/30"
+          )}
+        >
+          <PieChartIcon size={22} />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Gráficos</span>
+        </button>
+
         <button 
           onClick={() => {
             setActiveTab('debts');
