@@ -614,7 +614,7 @@ export function TransactionList({
                               </div>
 
                               <h4 className={cn(
-                                "font-bold text-sm leading-tight mb-2 truncate",
+                                "font-bold text-sm leading-tight mb-2 line-clamp-2",
                                 d.status === 'paid' && "line-through opacity-50"
                               )}>
                                 {d.description}
@@ -741,7 +741,7 @@ export function TransactionList({
                               
                                 <div className="min-w-0 flex-1">
                                   <h4 className={cn(
-                                    "font-bold text-sm sm:text-base leading-tight mb-0.5 truncate",
+                                    "font-bold text-sm sm:text-base leading-tight mb-0.5 line-clamp-2",
                                     d.status === 'paid' ? "line-through opacity-50" : "text-accent",
                                     isVirtual && "opacity-60 italic"
                                   )}>{d.description}</h4>
