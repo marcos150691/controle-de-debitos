@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Debt, Category } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
@@ -43,6 +43,8 @@ export function TransactionList({
 }: DebtListProps) {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedDebts, setExpandedDebts] = useState<Set<string>>(new Set());
+  const toggleExpanded = (e: React.MouseEvent, id: string) => { e.stopPropagation(); const newSet = new Set(expandedDebts); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); setExpandedDebts(newSet); };
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [pdfActionModal, setPdfActionModal] = useState<{
@@ -613,14 +615,24 @@ export function TransactionList({
                                 </span>
                               </div>
 
-                              <h4 
-                                title={d.description}
-                                className={cn(
-                                "font-bold text-sm leading-tight mb-2 line-clamp-2",
-                                d.status === 'paid' && "line-through opacity-50"
-                              )}>
-                                {d.description}
-                              </h4>
+                              <div className="flex flex-col gap-1 mb-2">
+                                <h4 
+                                  className={cn(
+                                  "font-bold text-sm leading-tight",
+                                  !expandedDebts.has(d.id) && "line-clamp-2",
+                                  d.status === 'paid' && "line-through opacity-50"
+                                )}>
+                                  {d.description}
+                                </h4>
+                                {d.description.length > 25 && (
+                                  <button
+                                    onClick={(e) => toggleExpanded(e, d.id)}
+                                    className="text-[10px] text-accent/60 hover:text-accent font-bold uppercase tracking-widest text-left w-max transition-colors"
+                                  >
+                                    {expandedDebts.has(d.id) ? 'Recolher' : 'Detalhes'}
+                                  </button>
+                                )}
+                              </div>
 
                               <div className="mt-auto flex items-center justify-between gap-1">
                                 <div className="flex flex-col gap-0.5">
@@ -741,13 +753,23 @@ export function TransactionList({
                               )}
                               
                                 <div className="min-w-0 flex-1">
-                                  <h4 
-                                    title={d.description}
-                                    className={cn(
-                                    "font-bold text-sm sm:text-base leading-tight mb-0.5 line-clamp-2",
-                                    d.status === 'paid' ? "line-through opacity-50" : "text-accent",
-                                    isVirtual && "opacity-60 italic"
-                                  )}>{d.description}</h4>
+                                  <div className="flex flex-col gap-0.5 mb-1">
+                                    <h4 
+                                      className={cn(
+                                      "font-bold text-sm sm:text-base leading-tight",
+                                      !expandedDebts.has(d.id) && "line-clamp-2",
+                                      d.status === 'paid' ? "line-through opacity-50" : "text-accent",
+                                      isVirtual && "opacity-60 italic"
+                                    )}>{d.description}</h4>
+                                    {d.description.length > 30 && (
+                                      <button
+                                        onClick={(e) => toggleExpanded(e, d.id)}
+                                        className="text-[10px] text-white/40 hover:text-white font-bold uppercase tracking-widest text-left w-max transition-colors"
+                                      >
+                                        {expandedDebts.has(d.id) ? 'Recolher' : 'Detalhes'}
+                                      </button>
+                                    )}
+                                  </div>
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className={cn(
                                       "flex items-center gap-1 text-[9px] sm:text-[11px] font-bold uppercase tracking-widest",

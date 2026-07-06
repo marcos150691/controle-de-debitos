@@ -756,11 +756,11 @@ export default function App() {
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 lg:hidden glass shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-white/5 px-6 py-4 z-40 flex items-center justify-around rounded-t-[32px]">
+      <div className="fixed bottom-0 left-0 right-0 lg:hidden glass shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-white/5 px-6 py-4 z-40 flex items-center gap-6 overflow-x-auto hide-scrollbar rounded-t-[32px]">
         <button 
           onClick={() => setActiveTab('debts')}
           className={cn(
-            "p-3 rounded-2xl transition-all relative flex flex-col items-center gap-1",
+            "p-3 flex-shrink-0 min-w-[70px] rounded-2xl transition-all relative flex flex-col items-center gap-1",
             activeTab === 'debts' ? "text-accent bg-accent-soft" : "text-white/30"
           )}
         >
@@ -770,7 +770,7 @@ export default function App() {
         <button 
           onClick={() => setActiveTab('receipts')}
           className={cn(
-            "p-3 rounded-2xl transition-all relative flex flex-col items-center gap-1",
+            "p-3 flex-shrink-0 min-w-[70px] rounded-2xl transition-all relative flex flex-col items-center gap-1",
             activeTab === 'receipts' ? "text-accent bg-accent-soft" : "text-white/30"
           )}
         >
@@ -780,7 +780,7 @@ export default function App() {
         <button 
           onClick={() => setActiveTab("stats")}
           className={cn(
-            "p-3 rounded-2xl transition-all relative flex flex-col items-center gap-1",
+            "p-3 flex-shrink-0 min-w-[70px] rounded-2xl transition-all relative flex flex-col items-center gap-1",
             activeTab === "stats" ? "text-accent bg-accent-soft" : "text-white/30"
           )}
         >
@@ -788,22 +788,11 @@ export default function App() {
           <span className="text-[10px] font-bold uppercase tracking-wider">Gráficos</span>
         </button>
 
-        <button 
-          onClick={() => {
-            setActiveTab('debts');
-            setDebtToEdit(null);
-            setIsFormOpen(true);
-          }}
-          className={cn(
-            "p-4 -mt-12 rounded-full transition-all relative flex flex-col items-center gap-1 bg-accent text-white shadow-xl shadow-accent/20 border-4 border-black",
-          )}
-        >
-          <PlusIcon size={24} />
-        </button>
+        
         <button 
           onClick={() => setActiveTab('settings')}
           className={cn(
-            "p-3 rounded-2xl transition-all relative flex flex-col items-center gap-1",
+            "p-3 flex-shrink-0 min-w-[70px] rounded-2xl transition-all relative flex flex-col items-center gap-1",
             activeTab === 'settings' ? "text-accent bg-accent-soft" : "text-white/30"
           )}
         >
@@ -812,6 +801,21 @@ export default function App() {
         </button>
       </div>
 
+      {/* Mobile Floating Action Button */}
+      <div className="fixed bottom-24 right-6 lg:hidden z-40">
+<button 
+          onClick={() => {
+            setActiveTab('debts');
+            setDebtToEdit(null);
+            setIsFormOpen(true);
+          }}
+          className={cn(
+            "p-4 rounded-full transition-all relative flex flex-col items-center gap-1 bg-accent text-white shadow-xl shadow-accent/20 border-4 border-black",
+          )}
+        >
+          <PlusIcon size={24} />
+        </button>
+      </div>
       {/* Decorative Elements */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-accent/3 blur-[150px] rounded-full" />

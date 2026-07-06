@@ -1,0 +1,1 @@
+sed -i 's/className={cn(\n                                "font-bold text-sm leading-tight mb-2 line-clamp-2",/className={cn(\n                                "font-bold text-sm leading-tight mb-1",\n                                !expandedDebts.has(d.id) \&\& "line-clamp-2",/g' src/components/TransactionList.tsx
