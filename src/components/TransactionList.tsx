@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Debt, Category } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
-import { Trash2, CheckCircle2, Circle, Calendar, Edit3, Tag, CreditCard, Home, Zap, HeartPulse, GraduationCap, PartyPopper, ShoppingBag, DollarSign, LucideIcon, TrendingUp, Filter, ChevronLeft, ChevronRight, FileDown, CheckSquare, Square, Share2, Eye, Download, X, Send } from 'lucide-react';
+import { Trash2, CheckCircle2, Circle, Calendar, Edit3, Tag, CreditCard, Home, Zap, HeartPulse, GraduationCap, PartyPopper, ShoppingBag, DollarSign, LucideIcon, TrendingUp, Filter, ChevronLeft, ChevronRight, FileDown, CheckSquare, Square, Share2, Eye, Download, X, Send, LayoutGrid, List } from 'lucide-react';
 import { format, addMonths, isSameMonth, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { jsPDF } from 'jspdf';
@@ -44,6 +44,7 @@ export function TransactionList({
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [pdfActionModal, setPdfActionModal] = useState<{
     blobUrl: string;
     fileName: string;
@@ -428,6 +429,29 @@ export function TransactionList({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/5 mr-1">
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all",
+                  viewMode === 'list' ? "bg-accent text-white shadow-sm" : "text-white/40 hover:text-white"
+                )}
+                title="Lista"
+              >
+                <List size={14} />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all",
+                  viewMode === 'grid' ? "bg-accent text-white shadow-sm" : "text-white/40 hover:text-white"
+                )}
+                title="Grade"
+              >
+                <LayoutGrid size={14} />
+              </button>
+            </div>
+
             <button
               onClick={() => {
                 setIsSelectionMode(!isSelectionMode);
@@ -544,7 +568,10 @@ export function TransactionList({
                       </div>
                     </div>
 
-                    <div className="grid gap-1.5">
+                    <div className={cn(
+                      "grid gap-2",
+                      viewMode === 'grid' ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"
+                    )}>
                       {items.map((d, index) => {
                         if (!d) return null;
                         const dDate = new Date(d.dueDate);
@@ -552,6 +579,78 @@ export function TransactionList({
                         const isVirtual = d.isVirtual;
                         const isLastInstallment = d.isInstallment && !d.isFixed && d.currentInstallment && d.totalInstallments && Number(d.currentInstallment) === Number(d.totalInstallments);
                       
+                        if (viewMode === 'grid') {
+                          return (
+                            <motion.div
+                              key={d.id || index}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: index * 0.01 }}
+                              onClick={() => {
+                                if (isSelectionMode) toggleSelection(d.id);
+                                else if (!isVirtual) onToggleStatus(d.id);
+                              }}
+                              className={cn(
+                                "group relative flex flex-col p-3 rounded-2xl border border-white/5 transition-all overflow-hidden cursor-pointer",
+                                d.status === 'paid' ? "bg-emerald-500/5 opacity-60" : (isOverdue && !isVirtual ? "bg-rose-500/5 border-rose-500/20" : "glass hover:bg-white/[0.04]"),
+                                isSelectionMode && selectedIds.has(d.id) && "border-accent bg-accent/10 shadow-[0_0_15px_rgba(99,102,241,0.2)]",
+                                isVirtual && "border-dashed opacity-50"
+                              )}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                                  d.status === 'paid' ? "bg-emerald-500/20 text-emerald-400" : (isOverdue && !isVirtual ? "bg-rose-500/20 text-rose-500" : "bg-white/5 text-accent/60")
+                                )}>
+                                  {d.status === 'paid' ? <CheckCircle2 size={16} /> : (isSelectionMode ? (selectedIds.has(d.id) ? <CheckSquare size={16} /> : <Square size={16} />) : <Circle size={16} />)}
+                                </div>
+                                
+                                <span className={cn(
+                                  "text-sm font-black tracking-tighter",
+                                  d.status === 'paid' ? "text-white/40" : (isOverdue && !isVirtual ? "text-rose-500" : "text-white")
+                                )}>
+                                  {formatCurrency(d.amount)}
+                                </span>
+                              </div>
+
+                              <h4 className={cn(
+                                "font-bold text-sm leading-tight mb-2 truncate",
+                                d.status === 'paid' && "line-through opacity-50"
+                              )}>
+                                {d.description}
+                              </h4>
+
+                              <div className="mt-auto flex items-center justify-between gap-1">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-white/30">
+                                    {safeFormatDate(d.dueDate)}
+                                  </span>
+                                  {d.isInstallment && !d.isFixed && (
+                                    <span className="text-[8px] font-black bg-accent/20 text-accent px-1 rounded inline-block w-fit">
+                                      {d.currentInstallment}/{d.totalInstallments}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); onEdit(d); }}
+                                    className="p-1 hover:bg-white/10 rounded text-white/40 hover:text-accent"
+                                  >
+                                    <Edit3 size={10} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); shareDebts([d]); }}
+                                    className="p-1 hover:bg-white/10 rounded text-white/40 hover:text-emerald-400"
+                                  >
+                                    <Send size={10} />
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        }
+
                         return (
                           <motion.div
                             key={d.id || index}
@@ -642,7 +741,7 @@ export function TransactionList({
                               
                                 <div className="min-w-0 flex-1">
                                   <h4 className={cn(
-                                    "font-bold text-xs sm:text-base leading-tight mb-0.5 truncate",
+                                    "font-bold text-sm sm:text-base leading-tight mb-0.5 truncate",
                                     d.status === 'paid' ? "line-through opacity-50" : "text-accent",
                                     isVirtual && "opacity-60 italic"
                                   )}>{d.description}</h4>
